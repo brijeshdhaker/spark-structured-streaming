@@ -4,8 +4,8 @@ confluent-kafka==1.4.0
 avro==1.10.0
 fastavro==0.22.13
 datetime
-pandas=0.24.2
-pyspark==2.4.0;python_version=>"2.7"
+pandas==0.24.2
+pyspark==2.4.0;python_version<"3.0"
 jsonschema
 protobuf
 requests
