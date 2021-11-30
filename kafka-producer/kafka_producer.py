@@ -1,4 +1,3 @@
-
 from kafka import KafkaProducer
 from datetime import datetime
 import time
@@ -17,17 +16,25 @@ if __name__ == "__main__":
     transaction_card_type_list = ["Visa", "MasterCard", "Maestro"]
 
     message = None
-    for i in range(5):
-        i = i + 1
-        message = {}
-        print("Sending message to Kafka topic: " + str(i))
-        event_datetime = datetime.now()
+    while True:
 
-        message["transaction_id"] = str(i)
-        message["transaction_card_type"] = random.choice(transaction_card_type_list)
-        message["transaction_amount"] = round(random.uniform(5.5,555.5), 2)
-        message["transaction_datetime"] = event_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        # Serve on_delivery callbacks from previous calls to produce()
+        # kafka_producer_obj.poll(0.0)
+        try:
 
-        print("Message to be sent: ", message)
-        kafka_producer_obj.send(KAFKA_INPUT_TOPIC_NAME, message)
-        time.sleep(1)
+            message = {}
+            id = random.randint(1001, 2000)
+            print("Sending message to Kafka topic: " + str(id))
+            event_datetime = datetime.now()
+            message["transaction_id"] = str(id)
+            message["transaction_card_type"] = random.choice(transaction_card_type_list)
+            message["transaction_amount"] = round(random.uniform(5.5, 555.5), 2)
+            message["transaction_datetime"] = event_datetime.strftime("%Y-%m-%d %H:%M:%S")
+            #
+            kafka_producer_obj.send(KAFKA_INPUT_TOPIC_NAME, message)
+
+            # time.sleep(1)
+
+        except ValueError:
+            print("Invalid input, discarding record...")
+            continue

@@ -128,8 +128,8 @@ def main(args):
             print("Invalid input, discarding record...")
             continue
 
-    print("\nFlushing records...")
-    producer.flush()
+print("\nFlushing records...")
+producer.flush()
 
 
 if __name__ == '__main__':
