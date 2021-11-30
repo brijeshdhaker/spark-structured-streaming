@@ -9,6 +9,7 @@ from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka import avro
 from confluent_kafka.avro import AvroProducer
 from datetime import datetime
+from utils.load_avro_schema_from_file import load_avro_schema_from_file
 import random
 
 class Transaction(object):
@@ -43,52 +44,10 @@ def trans_to_dict(transaction):
                 transaction_amount=transaction.transaction_amount,
                 transaction_datetime=transaction.transaction_datetime)
 
-value_schema_str = """
-{
-  "fields": [
-    {
-      "name": "transaction_id",
-      "type": "int"
-    },
-    {
-      "name": "transaction_card_type",
-      "type": "string"
-    },
-    {
-      "name": "transaction_amount",
-      "type": "float"
-    },
-    {
-      "name": "transaction_datetime",
-      "type": "string"
-    }
-  ],
-  "name": "Transaction",
-  "namespace": "com.test.avro",
-  "type": "record"
-}
-"""
+# value_schema = avro.loads(value_schema_str)
+# key_schema = avro.loads(key_schema_str)
 
-
-#
-#
-#
-key_schema_str = """
-{
-  "fields": [
-    {
-      "name": "name",
-      "type": "string"
-    }
-  ],
-  "name": "key",
-  "namespace": "com.test.avro",
-  "type": "record"
-}
-"""
-
-value_schema = avro.loads(value_schema_str)
-key_schema = avro.loads(key_schema_str)
+key_schema, value_schema = load_avro_schema_from_file("transaction_record.avsc")
 
 # schema_registry_conf = {'url': 'http://localhost:8081'}
 # schema_registry_client = SchemaRegistryClient(schema_registry_conf)
@@ -141,7 +100,7 @@ for data in some_data_source:
 
     event_datetime = datetime.now()
     value = trans_to_dict(data)
-    key = {"name": str(uuid4())}
+    key = str(uuid4())
     # Serve on_delivery callbacks from previous calls to produce()
     avroProducer.poll(0.0)
     try:
@@ -151,6 +110,11 @@ for data in some_data_source:
     except ValueError:
         print("Invalid input, discarding record...")
         continue
+    except Exception as e:
+        print("Exception while producing record value - {} to topic - input-avro-topic : {}".format(value, e))
+        continue
+    else:
+        print("Successfully producing record value - {} to topic - input-avro-topic ".format(value))
 
 # Wait for any outstanding messages to be delivered and delivery report
 # callbacks to be triggered.

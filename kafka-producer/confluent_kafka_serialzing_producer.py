@@ -31,6 +31,9 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from datetime import datetime
 
+from utils.load_avro_schema_from_file import load_avro_schema_as_str
+from utils.parse_command_line_args import parse_command_line_args
+
 class Transaction(object):
     """
     Transaction record
@@ -89,35 +92,11 @@ def delivery_report(err, msg):
 def main(args):
     topic = 'input-avro-topic'
 
-    value_schema_str = """
-    {
-      "fields": [
-        {
-          "name": "transaction_id",
-          "type": "int"
-        },
-        {
-          "name": "transaction_card_type",
-          "type": "string"
-        },
-        {
-          "name": "transaction_amount",
-          "type": "float"
-        },
-        {
-          "name": "transaction_datetime",
-          "type": "string"
-        }
-      ],
-      "name": "Transaction",
-      "namespace": "com.test.avro",
-      "type": "record"
-    }
-    """
+    key_schema, value_schema = load_avro_schema_as_str("transaction_record.avsc")
     schema_registry_conf = {'url': 'http://localhost:8081'}
     schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
-    value_avro_serializer = AvroSerializer(value_schema_str,
+    value_avro_serializer = AvroSerializer(value_schema,
                                            schema_registry_client,
                                            trans_to_dict)
 
@@ -127,8 +106,9 @@ def main(args):
 
     producer = SerializingProducer(producer_conf)
 
-    print("Producing transaction records to topic {}. ^C to exit.".format(topic))
+    print("Producing transaction records to topic {} ".format(topic))
     transaction_card_type_list = ["Visa", "MasterCard", "Maestro"]
+
     while True:
         # Serve on_delivery callbacks from previous calls to produce()
         producer.poll(0.0)
@@ -141,8 +121,9 @@ def main(args):
                                              transaction_card_type=random.choice(transaction_card_type_list),
                                              transaction_amount=round(random.uniform(5.5, 555.5), 2),
                                              transaction_datetime=event_datetime.strftime("%Y-%m-%d %H:%M:%S"))
-            producer.produce(topic=topic, key=str(uuid4()), value=transaction,
-                             on_delivery=delivery_report)
+
+            producer.produce(topic=topic, key=str(uuid4()), value=transaction, on_delivery=delivery_report)
+
         except ValueError:
             print("Invalid input, discarding record...")
             continue
@@ -161,5 +142,5 @@ if __name__ == '__main__':
     parser.add_argument('-t', dest="topic", default="example_serde_avro",
                         help="Topic name")
     """
-
+    # args = parse_command_line_args()
     main({"topic": "input-avro-topic"})

@@ -1,10 +1,7 @@
 from confluent_kafka.avro import AvroConsumer
-from confluent_kafka import DeserializingConsumer
 from confluent_kafka.avro.serializer import SerializerError
-from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.avro import AvroDeserializer
-from confluent_kafka.serialization import StringDeserializer
-from confluent_kafka import avro
+import json
+from utils.load_avro_schema_from_file import load_avro_schema_from_file
 
 class Transaction(object):
     """
@@ -52,67 +49,20 @@ def dict_to_key(obj, ctx):
     return {"name": obj['name']}
 
 
+# value_schema = avro.loads(value_schema_str)
+# key_schema = avro.loads(key_schema_str)
 
-value_schema_str = """
-{
-  "fields": [
-    {
-      "name": "transaction_id",
-      "type": "int"
-    },
-    {
-      "name": "transaction_card_type",
-      "type": "string"
-    },
-    {
-      "name": "transaction_amount",
-      "type": "float"
-    },
-    {
-      "name": "transaction_datetime",
-      "type": "string"
-    }
-  ],
-  "name": "Transaction",
-  "namespace": "com.test.avro",
-  "type": "record"
-}
-"""
-
-
-#
-#
-#
-key_schema_str = """
-{
-  "fields": [
-    {
-      "name": "name",
-      "type": "string"
-    }
-  ],
-  "name": "key",
-  "namespace": "com.test.avro",
-  "type": "record"
-}
-"""
-
-value_schema = avro.loads(value_schema_str)
-key_schema = avro.loads(key_schema_str)
-
-
+key_schema, value_schema = load_avro_schema_from_file("transaction_record.avsc")
 consumer = AvroConsumer({
     'bootstrap.servers': 'localhost:9092',
     'group.id': 'stream-avro-cgroup',
     'auto.offset.reset': 'earliest',
     'schema.registry.url': 'http://127.0.0.1:8081'
-}, reader_key_schema=key_schema, reader_value_schema=value_schema)
-
+})
 consumer.subscribe(['input-avro-topic'])
 
-# c.subscribe(['input-avro-topic'])
-
 while True:
+
     try:
         msg = consumer.poll(10)
 
@@ -120,13 +70,21 @@ while True:
         print("Message deserialization failed for {}: {}".format(msg, e))
         break
 
-    if msg is None:
-        continue
+    except Exception as e:
+        print("Exception while trying to poll messages - {e}".format(e))
 
-    if msg.error():
-        print("AvroConsumer error: {}".format(msg.error()))
-        continue
+    else:
 
-    print(msg.value())
+        if msg is None:
+            continue
+
+        if msg:
+            t_dict = msg.value()
+            print("Successfully poll a record from kafka topic: {}, partition: {}, offset: {}".format(msg.topic(), msg.partition(), msg.offset()))
+            print("Message key : {} payload : {}".format(msg.key(), json.dumps(t_dict)))
+            consumer.commit()
+        else:
+            print("No new messages at this point. Try again later.")
 
 consumer.close()
+
