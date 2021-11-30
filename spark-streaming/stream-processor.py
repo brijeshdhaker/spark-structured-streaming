@@ -81,7 +81,7 @@ if __name__ == "__main__":
         .option("topic", KAFKA_OUTPUT_TOPIC_NAME) \
         .trigger(processingTime='1 seconds') \
         .outputMode("update") \
-        .option("checkpointLocation", "file:///home/brijeshdhaker/git-repos/spark-structured-streaming/py_checkpoint") \
+        .option("checkpointLocation", "file:///home/brijeshdhaker/PycharmProjects/spark-structured-streaming/py_checkpoint") \
         .start()
 
     trans_detail_write_stream.awaitTermination()
