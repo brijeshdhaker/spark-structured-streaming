@@ -21,8 +21,7 @@ need to have a C compiler and librdkafka installed
 ```
 $ python2 -m venv ~/git-repos/spark-structured-streaming/venv
 $ source ~/git-repos/spark-structured-streaming/venv/bin/activate
-$ python setup.py develop
-$ cd examples
+$ cd ~/git-repos/spark-structured-streaming
 $ pip install -r requirements.pip
 ```
 
@@ -30,4 +29,18 @@ When you're finished with the venv:
 
 ```
 $ deactivate
+```
+
+#### Start Confluent Kafka Cluster & Schema Registry:
+
+```
+$ docker-compose -f dc-kafka-mini-cluster.yaml up -d
+```
+
+#### Run Spark Stream
+
+```
+$ cd ~/git-repos/spark-structured-streaming
+$ export SPARK_HOME=/opt/spark-2.4.0
+$ py spark-streaming/stream-processor.py
 ```
